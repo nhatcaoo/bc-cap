@@ -329,7 +329,7 @@ $('#transferButton').click(function () {
   var transactionObject = {
     from: account,
     to: $('#transfer-address').val(),
-    value: web3.toWei(Number($('#transfer-source-amount').val()), "ether")
+    value: web3.utils.toWei(Number($('#transfer-source-amount').val()), "ether")
   };
 
   function calculateGasFee(transactionObject) {

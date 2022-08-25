@@ -39,39 +39,35 @@ export async function doSwap(srcTokenAddress, destTokenAddress, account, amount,
   const exTx = await exchangeContract.methods
     .exchangeTokens(srcTokenAddress, destTokenAddress, amountEth.toString())
   console.log(exTx);
-  exTx.send({ from: sellerAddress, value: amountEth.toString() })
+  return exTx.send({ from: sellerAddress, value: amountEth.toString() }).on('transactionHash', function (hash) {
+    console.log("hash:");
+    console.log(hash);
+    return hash
+  })
+}
+export async function doApprove(tokenAddress, amount, spender, web3, fn) {
+  await window.ethereum.enable()
+  web3 = new Web3(window.ethereum)
+  const sellerAddress = await getAccount();
+  const tokenContract = await getExchangeContractProvider(EnvConfig.TOKEN_TA_ABI, tokenAddress);
+  console.log(amount);
+  return await tokenContract.methods.approve(spender, amount.toString()).send({ from: sellerAddress }).on('transactionHash', function (hash) {
+    console.log("hash:");
+    console.log(hash);
+    return hash
+  })
 }
 
-export function doSwaps(srcTokenAddress, destTokenAddress, account, amount, amountEth) {
-  window.ethereum.enable()
-  let web3 = new Web3(window.ethereum)
-  const exchangeContract = new web3.eth.Contract(EnvConfig.EXCHANGE_CONTRACT_ABI, EnvConfig.EXCHANGE_CONTRACT_ADDRESS)
-  console.log(exchangeContract)
-  const sellerAddress = web3.eth.getAccounts().then(accounts => {
-    console.log(`Updating USER from ${this.currentUser} to ${accounts[0]}`)
-    return accounts[0]
-   })
-  const exTx = exchangeContract.methods
-    .exchangeTokens(srcTokenAddress, destTokenAddress, amount.toString())
-    .send({ from: sellerAddress }).then(console.log)
-  console.log(exTx);
-}
-export function calculateEstimateGasExchangeToken(srcTokenAddress, destTokenAddress, account, amount, web3, fn) {
-  const exchangeContract = web3.eth.contract(EnvConfig.EXCHANGE_CONTRACT_ABI).at(EnvConfig.EXCHANGE_CONTRACT_ADDRESS);
-  exchangeContract.exchangeTokens.estimateGas(srcTokenAddress, destTokenAddress, amount.toString(), { from: account, value: amount.toString() },
-    function (result, error) {
-      fn(error, result);
-    }
-  )
-}
-
-export function calculateEstimateGasApprove(srcTokenAddress, amount, spender, web3, fn) {
-  const tokenContract = web3.eth.contract(EnvConfig.TOKEN_ABI).at(srcTokenAddress);
-  tokenContract.approve.estimateGas(spender, amount,
-    function (result, error) {
-      fn(error, result);
-    }
-  )
+export async function doTransfer(srcTokenAddress, receiver, amount) {
+  await window.ethereum.enable()
+  web3 = new Web3(window.ethereum)
+  const sellerAddress = await getAccount();
+  const tokenContract = await getExchangeContractProvider(EnvConfig.TOKEN_TA_ABI, srcTokenAddress);
+  return await tokenContract.methods.transfer(receiver, amount.toString()).send({ from: sellerAddress }).on('transactionHash', function (hash) {
+    console.log("hash:");
+    console.log(hash);
+    return hash
+  })
 }
 
 
@@ -104,19 +100,7 @@ export function getTransferABI(data) {
   return minABI;
 }
 
-export function doApprove(tokenAddress, amount, spender, web3, fn) {
-  /*TODO: Get Approve ABI*/
-  // const tokenContract = getTokenContract(tokenAddress);
-  var web3 = new Web3(new Web3.providers.HttpProvider(process.env.WEB3_PROVIDER));
-  const tokenContract = new web3.eth.Contract(EnvConfig.TOKEN_ABI).at(tokenAddress);
-  return new Promise((resolve, reject) => {
-    tokenContract.approve(spender, amount.toString(),
-      function (result, error) {
-        fn(error, result);
-      }
-    )
-  })
-}
+
 
 export function getAllowance(srcTokenAddress, address, spender) {
   /*TODO: Get current allowance for a token in user wallet*/

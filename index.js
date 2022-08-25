@@ -1,16 +1,16 @@
 import {
-  getExchangeRate, getTokenBalances,
-  doApprove, doSwap,
+  getExchangeRate,
+  doApprove, doSwap, doTransfer
 } from "./services/networkService";
 import EnvConfig from "./configs/env";
 import { getWeb3Instance } from "./services/web3Service";
 import BigNumber from "./node_modules/bignumber.js"
+const convert = require('ether-converter')
 var balanceEth;
 var balanceTa;
 var balanceTb;
 var account;
 var currentSrcToken;
-var amountSrcToken;
 var nativeToken = EnvConfig.TOKENS[0];
 let web3;
 
@@ -25,8 +25,6 @@ $(document).ready(function () {
 // interval get information in wallet
 function doInterval() {
   getAddress();
-  // getAmountEth();
-  //getAmountToken();
 }
 
 function getAddress() {
@@ -43,83 +41,10 @@ function getAddress() {
 
     $('#addressInfor').html("Address: " + compressAccount);
     $('#addressInforTransfer').html("Address: " + compressAccount);
-    /*
-    let balanceEth = web3.eth.getBalance(accountInfor) / Math.pow(10, 18);
-    if (currentSrcToken.symbol === 'ETH') {
-      $('#amountInfor').html($('#selected-src-symbol').text() + ": " + balanceEth);
-      $('#amountInforTransfer').html($('#selected-transfer-token').text() + ": " + balanceEth);
-      amountSrcToken = balanceEth;
-    }
-
-    var setValueTa = function (value) {
-      balanceTa = value;
-    }
-    var setValueTb = function (value) {
-      balanceTb = value;
-    }
-    getTokenBalances('TA', account, setValueTa);
-    getTokenBalances('TB', account, setValueTb);
-    if (currentSrcToken !== undefined && currentSrcToken.symbol === 'AT') {
-      $('#amountInfor').html($('#selected-src-symbol').text() + ": " + balanceTa / Math.pow(10, 18));
-      $('#amountInforTransfer').html($('#selected-transfer-token').text() + ": " + balanceTa / Math.pow(10, 18));
-      amountSrcToken = balanceTa / Math.pow(10, 18);
-    }
-    if (currentSrcToken !== undefined && currentSrcToken.symbol === 'BT') {
-      $('#amountInfor').html($('#selected-src-symbol').text() + ": " + balanceTb / Math.pow(10, 18));
-      $('#amountInforTransfer').html($('#selected-transfer-token').text() + ": " + balanceTb / Math.pow(10, 18));
-      amountSrcToken = balanceTb / Math.pow(10, 18);
-    }
-    */
-  }
-}
-function getAmountEth() {
-  if (web3.currentProvider.selectedAddress != null && currentSrcToken !== undefined) {
-    web3.eth.getBalance(web3.currentProvider.selectedAddress, (err, wei) => {
-      // balance = web3.utils.fromWei(wei, 'ether') 
-      if (wei !== 'undefined') {
-        // console.log($('#selected-src-symbol').text() + ": " + wei / Math.pow(10, 18));
-        balanceEth = wei / Math.pow(10, 18);
-        if (currentSrcToken.symbol === 'ETH') {
-          $('#amountInfor').html($('#selected-src-symbol').text() + ": " + wei / Math.pow(10, 18));
-          $('#amountInforTransfer').html($('#selected-transfer-token').text() + ": " + wei / Math.pow(10, 18));
-          amountSrcToken = wei / Math.pow(10, 18);
-        }
-      }
-      // return wei/Math.pow(10,18);
-    });
-  }
-}
-function getAmountToken() {
-
-  if (web3.currentProvider.selectedAddress != null) {
-    var setValueTa = function (value) {
-      balanceTa = value;
-    }
-    var setValueTb = function (value) {
-      balanceTb = value;
-    }
-    const srcToken = findTokenBySymbol($('#selected-src-symbol').text());
-    const destToken = findTokenBySymbol($('#selected-dest-symbol').text());
-
-    getTokenBalances(findTokenBySymbol('AT').address, account, setValueTa);
-    getTokenBalances(findTokenBySymbol('BT').address, account, setValueTb);
-
-    function setAmountInfo(currentDisplay) {
-      $('#amountInfor').html($('#selected-src-symbol').text() + ": " + currentDisplay / Math.pow(10, 18));
-      $('#amountInforTransfer').html($('#selected-transfer-token').text() + ": " + currentDisplay / Math.pow(10, 18));
-      amountSrcToken = currentDisplay / Math.pow(10, 18);
-    }
-    if (currentSrcToken !== undefined && currentSrcToken.symbol === 'AT') {
-      setAmountInfo(balanceTa);
-    }
-    if (currentSrcToken !== undefined && currentSrcToken.symbol === 'BT') {
-      setAmountInfo(balanceTb);
-    }
   }
 }
 
 setInterval(doInterval, 100); // Time in milliseconds
-
 
 // validate input in transfer tab
 async function alertErrorTransferTab(errorMessage) {
@@ -138,7 +63,7 @@ function isValidAddressInputAddressTransfer() {
 }
 function isInputInRangeTransferTab() {
   let number = $('#transfer-source-amount').val();
-  let max = amountSrcToken;
+  let max = 1000000;
   if (number <= 0 || number > max) {
     return false;
   }
@@ -154,7 +79,7 @@ function validateTransfer() {
     return false;
   }
   if (!isInputInRangeTransferTab()) {
-    alertErrorTransferTab('Please enter number greater than 0, less than current balance');
+    alertErrorTransferTab('Please enter number greater than 0, less than 1000000');
     return false;
   }
   return true
@@ -273,40 +198,14 @@ $('#transferButton').click(function () {
   let transactionObject = {
     from: account,
     to: $('#transfer-address').val(),
-    value: web3.toWei(Number($('#transfer-source-amount').val()), "ether")
+    value: convert(Number($('#transfer-source-amount').val()), "ether", 'wei')
   };
 
-  function calculateGasFee(transactionObject) {
-    let gasPrice;
-    let gasEstimate;
-    let gasFee;
-    console.log(transactionObject);
-    function setGasPrice(err, value) {
-      gasPrice = value;
-      changGasFee();
-      console.log("price main: " + gasPrice);
-    }
-    function setGasEstimate(err, value) {
-      gasEstimate = value;
-      changGasFee();
-      console.log("estimate main: " + gasEstimate);
-    }
-    function changGasFee() {
-      gasFee = gasPrice * gasEstimate / Math.pow(10, 18);
-      console.log("GAS FEE: " + gasFee);
-      if (!isNaN(gasFee)) {
-        $('#gas-fee-transfer').html(gasFee);
-      }
-    }
-    // web3.eth.getGasPrice((err, result) => setGasPrice(err, result));
-    web3.eth.estimateGas(transactionObject, (err, result) => setGasEstimate(err, result));
-  }
-  calculateGasFee(transactionObject);
 
   $('#confirm-transfer-modal').modal();
 
 });
-$('#confirm-transfer-button').click(function () {
+$('#confirm-transfer-button').click(async function () {
   $('#confirm-transfer-modal').modal('hide');
 
   // $('#contain-status-modal').addClass('text-secondary');
@@ -314,20 +213,14 @@ $('#confirm-transfer-button').click(function () {
   $('#status-transfer-modal').modal('show');
   setModal('text-secondary', 'Broadcasting');
 
-
-
   if (account != null && account !== 'undefined') {
     if (currentSrcToken.symbol === 'ETH') {
 
       let transactionObject = {
         from: account,
         to: $('#transfer-address').val(),
-        value: web3.toWei(Number($('#transfer-source-amount').val()), "ether")
+        value: convert(Number($('#transfer-source-amount').val()), "ether", 'wei')
       };
-
-
-
-
       web3.eth.sendTransaction(transactionObject, function (err, transactionHash) {
         if (!err) {
           console.log(transactionHash + " success");
@@ -341,12 +234,10 @@ $('#confirm-transfer-button').click(function () {
               clearInterval(intevalReceipt);
             }
           }
-
           let intevalReceipt = setInterval(function () {
             // console.log('here');
             web3.eth.getTransactionReceipt(transactionHash, (err, result) => check(err, result))
           }, 2000);
-
 
         } else {
           console.log(err);
@@ -357,14 +248,13 @@ $('#confirm-transfer-button').click(function () {
       let tokenAddress = currentSrcToken.address;
       let toAddress = $('#transfer-address').val();
       let amount = Number($('#transfer-source-amount').val());
-      let minABI = EnvConfig.TOKEN_ABI;
-
-      // Get ERC20 Token contract instance
-      let contract = web3.eth.contract(minABI).at(tokenAddress);
-      // calculate ERC20 token amount
-      let value = amount * Math.pow(10, 18);
-      // call transfer function
-      contract.transfer(toAddress, value, (err, txHash) => checkStatus(err, txHash));
+      const val = BigNumber(amount).multipliedBy(BigNumber(10).pow(18)).toFixed()
+      const hash = await doTransfer(tokenAddress, toAddress, val)
+      if (hash != null) {
+        console.log("okiookk", hash);
+        setModal('text-success', "Success", hash.transactionHash);
+      }
+     
     }
 
   }
@@ -395,7 +285,7 @@ $('#swap-button').click(function () {
     return;
   }
   if (!isInputInRange()) {
-    alertError("Amount must greater than 0, less than current amount");
+    alertError("Amount must greater than 0, less than 1000000");
     return;
   }
 
@@ -443,15 +333,13 @@ $('#swap-button').click(function () {
   //  web3.eth.getGasPrice((err, result) => setGasPrice(err, result));
 
   if (srcToken.address === nativeToken.address) {
-    // calculateEstimateGasExchangeToken(srcToken.address, destToken.address, account, amount * Math.pow(10, 18).toString(), web3, takeEstimateGas);
     $('#confirm-swap-modal').modal();
     return;
   }
-  calculateEstimateGasApprove(destToken.address, amount * Math.pow(10, 18).toString(), account, web3, takeEstimateGas);
   $('#confirm-approve-modal').modal();
 })
 
-$('#confirm-approve-button').click(function () {
+$('#confirm-approve-button').click(async function () {
   $('#confirm-approve-modal').modal('hide');
   $('#status-mix-modal').modal('show');
   setApproveModal('text-secondary', 'Broadcasting');
@@ -461,67 +349,16 @@ $('#confirm-approve-button').click(function () {
   const destToken = findTokenBySymbol($('#selected-dest-symbol').text());
   const amount = $('#swap-source-amount').val();
 
-  let fn = (transactionHash, error) => {
-    console.log('doing approve!');
-    let fn2 = (transactionHash, error) => {
-      console.log('here');
-      console.log('tx: ' + transactionHash);
-      console.log('err: ' + error);
-    }
-    if (!error) {
-      console.log('transaction hash approve: ' + transactionHash);
-      let addressTxCompress = transactionHash.substring(0, 10) + "..." + transactionHash.substring(transactionHash.length - 5, transactionHash.length);
-
-      setApproveModal('text-primary', "Broadcasted", transactionHash);
-      $('#transaction-approve-mix-modal').html(addressTxCompress);
-      let check = function (err, result) {
-        if (result != null) {
-          setApproveModal('text-success', "Success", transactionHash);
-          clearInterval(intevalReceipt);
-          $('#section-swap').css("display", "block");
-
-          function calculateGasSwap() {
-            let gasEstimate;
-            let gasPrice;
-            let gasFee;
-            function takeEstimateGas(result, error) {
-              gasEstimate = result;
-              changGasFee();
-            }
-            function setGasPrice(err, value) {
-              gasPrice = value;
-              changGasFee();
-            }
-            function changGasFee() {
-              gasFee = gasPrice * gasEstimate / Math.pow(10, 18);
-              if (!isNaN(gasFee)) {
-                $('#gas-fee-swap-mix-modal').html(gasFee);
-              }
-            }
-            const srcToken = findTokenBySymbol($('#selected-src-symbol').text());
-            const destToken = findTokenBySymbol($('#selected-dest-symbol').text());
-            const amount = $('#swap-source-amount').val();
-            //  web3.eth.getGasPrice((err, result) => setGasPrice(err, result));
-            //calculateEstimateGasExchangeToken(srcToken.address, destToken.address, account, amount * Math.pow(10, 18).toString(), web3, takeEstimateGas);
-
-          }
-          calculateGasSwap();
-          $('#confirm-swap-mix-modal').modal();
-
-        }
-      }
-      let intevalReceipt = setInterval(function () {
-        // console.log('here');
-        web3.eth.getTransactionReceipt(transactionHash, (err, result) => check(err, result))
-      }, 2000);
-
-      // doSwap(srcToken.address, destToken.address, account, amount * Math.pow(10, 18).toString(), 0, web3, fn2);
-    } else {
-      console.log("Error approve: " + error);
-    }
+  const val = BigNumber(amount).multipliedBy(BigNumber(10).pow(18)).toFixed()
+  const hashApprove = await doApprove(destToken.address, val, EnvConfig.EXCHANGE_CONTRACT_ADDRESS, web3);
+  if (hashApprove != null) {
+    setModal('text-success', "Success", hashApprove.transactionHash);
   }
-  doApprove(destToken.address, amount * Math.pow(10, 18).toString(), EnvConfig.EXCHANGE_CONTRACT_ADDRESS, web3, fn);
-
+  const hashSwap = await doSwap(srcToken.address, destToken.address, account, val, 0, web3);
+  if (hashSwap != null) {
+    setModal('text-success', "Success", hashSwap.transactionHash);
+    setApproveModal('text-success', "Success", hashSwap.transactionHash);
+  }
 })
 
 $('#confirm-swap-button-mix-modal').click(async function () {
@@ -552,7 +389,8 @@ $('#confirm-swap-button-mix-modal').click(async function () {
       console.log("Error approve: " + error);
     }
   }
-  await doSwap(srcToken.address, destToken.address, account, amount * Math.pow(10, 18).toString(), 0, web3, fn);
+  const val = BigNumber(amount).multipliedBy(BigNumber(10).pow(18)).toFixed()
+  await doSwap(srcToken.address, destToken.address, account, val, 0, web3, fn);
 })
 
 $('#confirm-swap-button').click(async function () {
@@ -563,19 +401,11 @@ $('#confirm-swap-button').click(async function () {
   if (srcToken.address !== nativeToken.address && destToken.address !== nativeToken.address) {
     //transfer between 2 token
   } else if (destToken.address === nativeToken.address) {
-    // swap token to eth
-    // never happen
-    console.log('dasdasdasdasdasdasdas');
     $('#status-mix-modal').modal('show');
     setApproveModal('text-secondary', 'Broadcasting');
     $('#section-swap').css("display", "none");
     let fn = (transactionHash, error) => {
       console.log('doing approve!');
-      let fn2 = (transactionHash, error) => {
-        console.log('here');
-        console.log('tx: ' + transactionHash);
-        console.log('err: ' + error);
-      }
       if (!error) {
         console.log('transaction hash approve: ' + transactionHash);
         setApproveModal('text-primary', "Broadcasted", transactionHash);
@@ -587,7 +417,6 @@ $('#confirm-swap-button').click(async function () {
             $('#section-swap').css("display", "block");
 
             $('#confirm-swap-after-approve-modal').modal();
-
           }
         }
         let intevalReceipt = setInterval(function () {
@@ -600,7 +429,8 @@ $('#confirm-swap-button').click(async function () {
         console.log("Error approve: " + error);
       }
     }
-    doApprove(srcToken.address, amount * Math.pow(10, 18).toString(), EnvConfig.EXCHANGE_CONTRACT_ADDRESS, web3, fn);
+    const val = BigNumber(amount).multipliedBy(BigNumber(10).pow(18)).toFixed()
+    doApprove(srcToken.address, val, EnvConfig.EXCHANGE_CONTRACT_ADDRESS, web3, fn);
 
   } else if (srcToken.address === nativeToken.address) {
     // swap eth to token
@@ -625,7 +455,13 @@ $('#confirm-swap-button').click(async function () {
         console.log("error callback: " + error);
       }
     }
-    await doSwap(srcToken.address, destToken.address, account, amount * Math.pow(10, 18).toString(), amount * Math.pow(10, 18).toString(), fn);
+
+    const val = BigNumber(amount).multipliedBy(BigNumber(10).pow(18)).toFixed()
+    const hash = await doSwap(srcToken.address, destToken.address, account, val, val, fn);
+    if (hash != null) {
+      setModal('text-success', "Success", hash.transactionHash);
+    }
+
   }
 });
 
@@ -659,7 +495,7 @@ function isValidNumberInputSourceSwap() {
 }
 function isInputInRange() {
   let number = $('#swap-source-amount').val();
-  let max = amountSrcToken;
+  let max = 1000000;
   if (number <= 0 || number > max) {
     return false;
   }
@@ -714,12 +550,10 @@ $(function () {
   function initiateDefaultRate(srcSymbol, destSymbol) {
     const srcToken = findTokenBySymbol(srcSymbol);
     const destToken = findTokenBySymbol(destSymbol);
-    // const defaultSrcAmount = (Math.pow(10, 18)).toString();
-    // const defaultSrcAmount = "1";
     const defaultSrcAmount = BigNumber(10).pow(18);
 
     getExchangeRate(srcToken.address, destToken.address, defaultSrcAmount.toString()).then((result) => {
-      // const rate = result / Math.pow(10, 18);
+
       const rate = BigNumber(result).div(Math.pow(10, 18)).toString();
       $('#exchange-rate').html(rate);
     }).catch((error) => {
@@ -799,14 +633,14 @@ $(function () {
     web3.eth.accounts.wallet.add(account);
 
   })
-  
+
   // ethereum.autoRefreshOnNetworkChange = false;
   // window.ethereum.autoRefreshOnNetworkChange = false;
   async function connectMetamask() {
-    
-      await window.ethereum.enable();
-      web3 = new Web3(window.ethereum);
-      // startApp(provider); // initialize your app
+
+    await window.ethereum.enable();
+    web3 = new Web3(window.ethereum);
+    // startApp(provider); // initialize your app
 
   }
   // Handle on Source Amount Changed
