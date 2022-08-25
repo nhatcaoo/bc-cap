@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Decentralized Exchange</title>
+  <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="node_modules/bootstrap-social/bootstrap-social.css">
+  <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,600" rel="stylesheet">
+  <!-- <script src="libraries/jquery-3.4.1.min.js"></script> -->
+
+
+</head>
+
+<body>
+
+  <div class="container">
+    <h1 class="main-title">Decentralized Exchange</h1>
+    <div class="main-content">
+      <div class="tab-container">
+        <div class="tab">
+          <div class="tab__item tab__item--active" data-content-id="swap" id="tab_swap">SWAP</div>
+          <div class="tab__item" data-content-id="transfer" id="tab_transfer">TRANSFER</div>
+        </div>
+      </div>
+
+      <div class="swap active" id="swap">
+        <div class="input-container">
+          <label class="input-title" for="swap-source-amount">From:</label>
+          <div class="input-group">
+            <div class="dropdown_left">
+              <div class="dropdown__trigger">
+                <span class="selected-target" id="selected-src-symbol">Loading...</span>
+                <div class="dropdown__triangle"></div>
+              </div>
+              <div class="dropdown__content"></div>
+            </div>
+            <input class="input-item" id="swap-source-amount" type="text" placeholder="0" autocomplete="off" />
+          </div>
+        </div>
+        <div id="accountInfor" class="d-none">
+          <div class="row">
+            <div class="col-md">
+              <p class="text-nowrap" id="amountInfor"></p>
+            </div>
+            <div class="col-md">
+              <p class="text-nowrap" id="addressInfor"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="swap__icon" id="change-src-dest"></div>
+
+        <div class="input-container">
+          <div class="input-title">To:</div>
+          <div class="input-group">
+            <div class="dropdown_left">
+              <div class="dropdown__trigger">
+                <span class="selected-target" id="selected-dest-symbol">Loading...</span>
+                <div class="dropdown__triangle"></div>
+              </div>
+              <div class="dropdown__content">
+              </div>
+            </div>
+            <div class="input-placeholder" id="amount-dest-swap">0</div>
+          </div>
+          <div class="swap__rate">1 <span id="rate-src-symbol">Loading...</span> = <span
+              id="exchange-rate">Loading...</span> <span id="rate-dest-symbol">Loading...</span></div>
+        </div>
+        <div class="alert alert-danger fade" id="alert-swap-tab" role="alert">
+
+          <span id="messageError"> amount, please enter a number</span>
+        </div>
+        <div class="button" id="swap-button">Swap Now</div>
+      </div>
+
+      <div class="transfer" id="transfer">
+        <div class="input-container">
+          <label class="input-title" for="transfer-source-amount">From:</label>
+          <div class="input-group">
+            <div class="dropdown_left">
+              <div class="dropdown__trigger">
+                <span class="selected-target" id="selected-transfer-token">Loading...</span>
+                <div class="dropdown__triangle"></div>
+              </div>
+              <div class="dropdown__content"></div>
+            </div>
+            <input class="input-item" id="transfer-source-amount" type="text" placeholder="0" />
+
+            <div class="dropdown dropdown_rate">
+              <div class="dropdown__triangle" data-toggle="dropdown"></div>
+
+              <div class="dropdown-menu">
+                <div class="dropdown-item" id="25-percent-transfer">Transfer 25%</div>
+                <div class="dropdown-item" id="50-percent-transfer">Transfer 50%</div>
+                <div class="dropdown-item" id="100-percent-transfer">Transfer 100%</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="accountInforTransfer" class="d-none">
+          <div class="row">
+            <div class="col-md">
+              <p class="text-nowrap" id="amountInforTransfer"></p>
+            </div>
+            <div class="col-md">
+              <p class="text-nowrap" id="addressInforTransfer"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-container input-container--mt">
+          <label class="input-title" for="transfer-address">To Address:</label>
+          <div class="input-group">
+            <input class="input-item input-item--single" id="transfer-address" type="text" />
+          </div>
+        </div>
+        <div class="alert alert-danger fade" id="alert-transfer-tab" role="alert">
+          <span id="messageErrorTransfer"> amount, please enter a number</span>
+        </div>
+        <div class="button" id="transferButton">Transfer Now</div>
+      </div>
+
+      <div class="import-account">
+        <div class="import-account__title">Connect with</div>
+        <div class="import-account__container">
+          <div class="import-account__item" id="import-metamask">
+            <div class="import-account__icon metamask"></div>
+            <div class="import-account__name">METAMASK</div>
+          </div>
+
+          <div class="import-account__item import-account__item--inactive" id="import-keystore">
+            <div class="import-account__icon keystore"></div>
+            <div class="import-account__name">KEYSTORE</div>
+          </div>
+
+          <div class="import-account__item" id="import-private-key">
+            <div class="import-account__icon private-key"></div>
+            <div class="import-account__name">PRIVATE KEY</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal fade" id="confirm-transfer-modal">
+    <div class="modal-dialog modal-dialog-centered" role="content">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title mr-auto ml-auto">CONFIRM TRANSFER</h4>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-row">
+              <div class="col-md text-center token-modal" id="amount-transfer-modal">
+              </div>
+              <div class="col-md">
+                <div class="icon_arrow_right">
+                </div>
+              </div>
+              <div class="col-md text-center token-modal" id="to-address-modal">
+              </div>
+            </div>
+            <div class="form-row rate-modal">
+              <div class="col-md text-center">
+                GAS fee: <span id='gas-fee-transfer'></span>
+              </div>
+            </div>
+
+            <div class="form-row mt-3">
+              <div class="col-md text-center">
+                <button type="button" class="btn btn-light cancel-button-modal" data-dismiss="modal">Cancel</button>
+              </div>
+              <div class="col-md text-center">
+                <button type="button" class="btn confirm-button-modal" id="confirm-transfer-button">Confirm</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="status-transfer-modal">
+    <div class="modal-dialog modal-dialog-centered" role="content">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title mr-auto ml-auto">STATUS TRANSACTION</h4>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-row">
+              <div class="col-md text-center token-modal">
+                <span>Transaction hash: </span>
+              </div>
+              <div class="col-md text-center token-modal" id="transaction-hash-modal">
+
+              </div>
+              <div class="col-md-1">
+                <a href="#" id='link-to-ropsten' target="_blank">
+                  <i class="fa fa-external-link" aria-hidden="true">
+                  </i>
+                </a>
+              </div>
+            </div>
+            <div class="form-row text-center">
+              <div class="col-md" id="contain-status-modal">
+                <div class="spinner-border" role="status" id="spinner-status-modal">
+                  <span class="sr-only">..spinner</span>
+                </div>
+                <i class="fa fa-check d-none" id="icon-success-modal"></i>
+                <span id="name-status-modal">processing</span>
+              </div>
+            </div>
+
+            <div class="form-row mt-3">
+              <div class="col-md text-center">
+                <button type="button" class="btn btn-light cancel-button-modal" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="confirm-swap-modal">
+    <div class="modal-dialog modal-dialog-centered" role="content">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title mr-auto ml-auto">CONFIRM SWAP</h4>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-row">
+              <div class="col-md text-center token-modal" id="source-swap">
+              </div>
+              <div class="col-md">
+                <div class="icon_arrow_right">
+                </div>
+              </div>
+              <div class="col-md text-center token-modal" id="dest-swap">
+              </div>
+            </div>
+            <div class="form-row rate-modal">
+              <div class="col-md text-center" id="rate-modal">
+
+              </div>
+              <div class="col-md text-center">
+                GAS fee <span id='gas-fee-swap'></span>
+              </div>
+            </div>
+
+            <div class="form-row mt-3">
+              <div class="col-md text-center">
+                <button type="button" class="btn btn-light cancel-button-modal" data-dismiss="modal">Cancel</button>
+              </div>
+              <div class="col-md text-center">
+                <button type="button" class="btn confirm-button-modal" id="confirm-swap-button">Confirm</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="confirm-approve-modal">
+    <div class="modal-dialog modal-dialog-centered" role="content">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title mr-auto ml-auto">CONFIRM APPROVE</h4>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-row">
+              <div class="col-md-3 text-right token-modal">
+                <span id="amount-approve"></span>
+              </div>
+              <div class="col-md-9 text-right token-modal">
+                Address <span id="spender-approve"></span>
+              </div>
+            </div>
+            <div class="form-row rate-modal">
+              <div class="col-md text-center">
+                GAS fee <span id='gas-fee-approve'></span>
+              </div>
+            </div>
+
+            <div class="form-row mt-3">
+              <div class="col-md text-center">
+                <button type="button" class="btn btn-light cancel-button-modal" data-dismiss="modal">Cancel</button>
+              </div>
+              <div class="col-md text-center">
+                <button type="button" class="btn confirm-button-modal" id="confirm-approve-button">Confirm</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal fade" id="status-mix-modal">
+    <div class="modal-dialog modal-dialog-centered" role="content">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title mr-auto ml-auto">STATUS TRANSACTION</h4>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div id="section-approve">
+              <div class="form-row">
+                <div class="col-md text-center token-modal">
+                  <h5 class="modal-title mr-auto ml-auto">APPROVE STATUS</h5>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="col-md text-center token-modal">
+                  <span>Transaction hash: </span>
+                </div>
+                <div class="col-md text-center token-modal" id="transaction-approve-mix-modal">
+
+                </div>
+                <div class="col-md-1">
+                  <a href="#" id='link-to-ropsten-approve-mix-modal' target="_blank">
+                    <i class="fa fa-external-link" aria-hidden="true">
+                    </i>
+                  </a>
+                </div>
+              </div>
+              <div class="form-row text-center">
+                <div class="col-md" id="contain-status-approve-mix-modal">
+                  <div class="spinner-border" role="status" id="spinner-status-approve-mix-modal">
+                    <span class="sr-only">..spinner</span>
+                  </div>
+                  <i class="fa fa-check d-none" id="icon-success-approve-mix-modal"></i>
+                  <span id="name-status-approve-mix-modal">processing</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="section-swap">
+              <div class="form-row" style="border-top: 1px solid #dee2e6;">
+                <div class="col-md text-center token-modal">
+                  <h5 class="modal-title mr-auto ml-auto">SWAP STATUS</h5>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="col-md text-center token-modal">
+                  <span>Transaction hash: </span>
+                </div>
+                <div class="col-md text-center token-modal" id="transaction-swap-mix-modal">
+
+                </div>
+                <div class="col-md-1">
+                  <a href="#" id='link-to-ropsten-swap-mix-modal' target="_blank">
+                    <i class="fa fa-external-link" aria-hidden="true">
+                    </i>
+                  </a>
+                </div>
+              </div>
+              <div class="form-row text-center">
+                <div class="col-md" id="contain-status-swap-mix-modal">
+                  <div class="spinner-border" role="status" id="spinner-status-swap-mix-modal">
+                    <span class="sr-only">..spinner</span>
+                  </div>
+                  <i class="fa fa-check d-none" id="icon-success-swap-mix-modal"></i>
+                  <span id="name-status-swap-mix-modal">processing</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-row mt-3">
+              <div class="col-md text-center">
+                <button type="button" class="btn btn-light cancel-button-modal" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <div class="modal fade" id="confirm-swap-mix-modal">
+    <div class="modal-dialog modal-dialog-centered" role="content">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title mr-auto ml-auto">CONFIRM SWAP</h4>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-row">
+              <div class="col-md text-center token-modal" id="source-swap-mix-modal">
+              </div>
+              <div class="col-md">
+                <div class="icon_arrow_right">
+                </div>
+              </div>
+              <div class="col-md text-center token-modal" id="dest-swap-mix-modal">
+              </div>
+            </div>
+            <div class="form-row rate-modal">
+              <div class="col-md text-center" id="rate-mix-modal">
+
+              </div>
+              <div class="col-md text-center">
+                GAS fee <span id='gas-fee-swap-mix-modal'></span>
+              </div>
+            </div>
+
+            <div class="form-row mt-3">
+              <div class="col-md text-center">
+                <button type="button" class="btn btn-light cancel-button-modal" data-dismiss="modal">Cancel</button>
+              </div>
+              <div class="col-md text-center">
+                <button type="button" class="btn confirm-button-modal"
+                  id="confirm-swap-button-mix-modal">Confirm</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="node_modules/jquery/dist/jquery.js"></script>
+  <!-- <script src="node_modules/web3/dist/web3"></script> -->
+  <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+  <script src="node_modules/popper.js/dist/umd/popper.min.js"></script>
+  <script src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="index.js"></script>
+
+</body>
+
+</html>
